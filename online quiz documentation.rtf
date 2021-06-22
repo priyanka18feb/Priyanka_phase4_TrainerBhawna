@@ -1,0 +1,161 @@
+{\rtf1\ansi\ansicpg1252\deff0\nouicompat\deflang1033{\fonttbl{\f0\fnil\fcharset0 Calibri;}}
+{\colortbl ;\red0\green0\blue255;}
+{\*\generator Riched20 10.0.19041}\viewkind4\uc1 
+\pard\sa200\sl276\slmult1\f0\fs36\lang9 Introduction\fs22\par
+\par
+This article presents you a simplified way to create your quiz application in Angular 2 in just few lines of code. The quiz application accepts the questions in json format. So, you can easily send the json from the server in the pre-defined format and the Angular quiz application will render the quiz at the client side. The quiz also has review and display result section. If you wish to declare the result immediately, you can simply call another json with the answers in it and simply evaluate and display the results immediately. Alternatively, if you wish to just submit the answers to the server, you can also do so at onSubmit method quiz.component.ts.\par
+\par
+About Quiz Application\par
+The quiz application consists of mainly 3 components/views: Quiz View, Review, Result. For the sake of simplicity, I have kept the views in the same file. Apart from this, quiz.component.ts has been used as a component class for all the views and styles.css has been used to apply CSS style to the application.\par
+\par
+Using the code is simple. Just providing  the json to the quiz application and it will render the quiz.\par
+The json format should look like the following:\par
+\par
+JavaScript\par
+\par
+// aspnet.json\par
+\{\par
+    "Id": 1,\par
+    "name": "Asp.Net Quiz",\par
+    "description": "Asp.Net Quiz (contains webform, mvc, web API, etc.)",\par
+    "questions": [\par
+        \{\par
+            "Id": 1010,\par
+            "Name": "ASP.NET webform separates the HTML output from \par
+                     program logic using a feature named as",\par
+            "QuestionTypeId": 1,\par
+            "Options": [\par
+                \{\par
+                    "Id": 1055,\par
+                    "QuestionId": 1010,\par
+                    "Name": "Exception",\par
+                    "IsAnswer": false\par
+                \},\par
+                \{\par
+                    "Id": 1056,\par
+                    "QuestionId": 1010,\par
+                    "Name": "Code-behind",\par
+                    "IsAnswer": true\par
+                \},\par
+                \{\par
+                    "Id": 1057,\par
+                    "QuestionId": 1010,\par
+                    "Name": "Code-front",\par
+                    "IsAnswer": false\par
+                \},\par
+                \{\par
+                    "Id": 1058,\par
+                    "QuestionId": 1010,\par
+                    "Name": "None of the above",\par
+                    "IsAnswer": false\par
+                \}\par
+            ],\par
+            "QuestionType": \{\par
+                "Id": 1,\par
+                "Name": "Multiple Choice",\par
+                "IsActive": true\par
+            \}\par
+        \},\par
+\par
+The Quiz Running Logic\par
+The application has a small set of scripting part that has been handled by the controller: quiz.component.ts. First of all, the component loads the questions by using loadQuiz('data/aspnet.js') method called at ngOnInit event. The quiz questions should be provided in a pre-defined json format as mentioned in aspnet.json or other related json files present in data folder. Once the questions are loaded, user can answer the questions and the events are being captured by the same component. When user finally submits the quiz, you may submit the answers to the server in json format. Or load the questions with answers and evaluate the users answers to show the quiz result immediately. In the sample, I have provided the later approach for the sake of simplicity.\par
+\par
+The quiz.component.ts file looks like the following:\par
+\par
+JavaScript\par
+// quiz.component.ts\par
+...\par
+  ngOnInit() \{\par
+    this.quizes = this.quizService.getAll();\par
+    this.quizName = this.quizes[0].id;\par
+    this.loadQuiz(this.quizName);\par
+  \}\par
+\par
+  loadQuiz(quizName: string) \{\par
+    this.quizService.get(quizName).subscribe(res => \{\par
+      this.quiz = res;\par
+      this.pager.count = this.quiz.questions.length;\par
+    \});\par
+  \}\par
+\par
+  get filteredQuestions() \{\par
+    return (this.quiz.questions) ?\par
+      this.quiz.questions.slice(this.pager.index, this.pager.index + this.pager.size) : [];\par
+  \}\par
+\par
+  onSelect(question: any, option: any) \{\par
+    if (question.QuestionTypeId == 1) \{\par
+      question.Options.forEach((x) => \{ if (x.Id != option.Id) x.Selected = false; \});\par
+    \}\par
+\par
+    if (this.config.autoMove) \{\par
+      this.goTo(this.pager.index + 1);\par
+    \}\par
+  \}\par
+\par
+  goTo(index: number) \{\par
+    if (index >= 0 && index < this.pager.count) \{\par
+      this.pager.index = index;\par
+      this.mode = 'quiz';\par
+    \}\par
+  \}\par
+\par
+Quiz Configuration\par
+The quiz configuration is an optional object that can be present in my <quiz>.json file. The config section allows you to customize your quiz the way you wish to do. The quiz application reads these configuration settings and applies these settings at the time of loading the quiz. The settings mainly consists of: shuffling the questions, showing/hiding pager, allowing back navigation, allowing auto move to next question. The details of this configuration is explained in "Quiz Features" section.\par
+\par
+The quiz configuration looks like the following:\par
+\par
+JavaScript\par
+// csharp.json\par
+...\par
+    "config":\{\par
+        "shuffleQuestions": true,\par
+        "showPager": false,\par
+        "allowBack": true,\par
+        "autoMove": true\par
+    \}\par
+Services Used\par
+I have used only one service in Angular2 component: quiz.service. It is used to retrieve quiz json file, populate the list of quizzes, and check the result.\par
+\par
+Quiz View (HTML Template)\par
+The Quiz View contains the UI for quiz questions, previous-next button, paging and related stuffs. For buttons and pagination UI, bootstrap has been used. The UI for questions and options has been set in styles.css.\par
+\par
+The HTML for quiz view looks like the following:\par
+\par
+HTML\par
+// quiz.component.html\par
+    <div *ngFor="let question of filteredQuestions;">\par
+      <div class="badge badge-info">Question \{\{pager.index + 1\}\} of \{\{pager.count\}\}.</div>\par
+      <h2>\{\{pager.index + 1\}\}. <span [innerHTML]="question.Name"></span></h2>\par
+      <div class="row text-left options">\par
+        <div class="col-md-6" *ngFor="let option of question.Options">\par
+          <div class="option">\par
+            <label class="" [attr.for]="option.Id">\par
+                <input id="\{\{option.Id\}\}" type="checkbox" \par
+                [(ngModel)]="option.Selected" (change)="onSelect(question, option);" />\par
+                \{\{option.Name\}\}\par
+            </label>\par
+          </div>\par
+        </div>\par
+      </div>\par
+    </div>\par
+\par
+The review and result view has also been implemented similarly by iterating over the quiz questions and displaying the needed stuff. \par
+The Styling\par
+For styling and theme, bootstrap 4 has been used. For further styling based on the applications need, CSS classes has been added in styles.css. \par
+Shuffle Questions\par
+shuffleQuestions property in config section is used to mention whether the questions should be randomized before showing or not. If true, the questions will be randomized. The default value is false.\par
+Shuffle Options\par
+shuffleOptions property in config section is used to mention whether the options can be randomized before showing or not. If true, the questions will be randomized. The default value is false. This feature is configurable from the quiz json file.\par
+Show Pager\par
+showPager property in config section indicates whether to show the pager element in quiz or not. If false, the numeric pager will not be shown. In this case, the user can still navigate via. first, prev, next and last button. The default value is true.\par
+Auto Move\par
+autoMove property in config section indicates whether to move to next question automatically when the question is answered. If true, you don't need to press Next button to move to next question. The default value is false.\par
+\par
+Load Quiz Dynamically\par
+In mock test/practice exams, user might want to change the quiz dynamically. To do so, we can just need to call loadQuiz method and pass the URL of the new quiz. \par
+\par
+Github Link: {{\field{\*\fldinst{HYPERLINK https://github.com/priyanka18feb/Priyanka_phase4_TrainerBhawna }}{\fldrslt{https://github.com/priyanka18feb/Priyanka_phase4_TrainerBhawna\ul0\cf0}}}}\f0\fs22\par
+Trello link: {{\field{\*\fldinst{HYPERLINK https://trello.com/b/0StlLK8K/online-test-application }}{\fldrslt{https://trello.com/b/0StlLK8K/online-test-application\ul0\cf0}}}}\f0\fs22\par
+}
+ 
